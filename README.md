@@ -1,6 +1,6 @@
 # chatterly
 
-A new Flutter project.
+A Simple Chat App based on Flutter and Firebase
 
 ## Getting Started
 
