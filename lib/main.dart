@@ -1,4 +1,6 @@
 import 'package:chatterly/screens/auth/loading.dart';
+import 'package:chatterly/screens/auth/register.dart';
+import 'package:chatterly/screens/auth/reset_password.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -44,17 +46,12 @@ class _MyAppState extends State<MyApp> {
           '/auth': (context) => const AuthScreen(),
           '/signin': (context) => const SignInScreen(),
           '/signup': (context) => const SignUpScreen(),
+          '/register': (context) => const RegistrationScreen(),
+          '/pwreset': (context) => const ResetPasswordScreen(),
           '/home': (context) => const HomeScreen(),
         },
-        home: StreamBuilder(
-          stream: FirebaseAuth.instance.authStateChanges(),
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              return const HomeScreen();
-            } else {
-              return const AuthScreen();
-            }
-          },
-        ));
+        home: FirebaseAuth.instance.currentUser == null
+            ? const AuthScreen()
+            : const HomeScreen());
   }
 }

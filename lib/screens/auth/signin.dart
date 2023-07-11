@@ -60,6 +60,8 @@ class _SignInScreenState extends State<SignInScreen> {
     }
   }
 
+  
+
   @override
   void initState() {
     super.initState();
@@ -226,7 +228,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
                 const SizedBox(height: 16),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: () => Navigator.pushNamed(context, '/pwreset'),
                   style: TextButton.styleFrom(
                     foregroundColor: Theme.of(context).colorScheme.primary,
                   ),
@@ -255,7 +257,7 @@ String? validateEmail(String? value, bool firstTime) {
 
 String? validatePassword(String? value, bool firstTime) {
   if (!firstTime && (value == null || value.isEmpty)) {
-    return 'Pass is required';
+    return 'Password is required';
   }
   if (!firstTime && value!.length < 6) {
     return 'Password must be at least 6 characters';

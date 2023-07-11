@@ -29,8 +29,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: const Center(
-        child: Text('You are logged in'),
+      body: Center(
+        child: Text(_firebaseAuth.currentUser!.displayName.toString()),
       ),
     );
   }
