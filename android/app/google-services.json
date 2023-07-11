@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "725969796524",
+    "project_id": "chatterly-gpaul",
+    "storage_bucket": "chatterly-gpaul.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:725969796524:android:98ab88fff5c4d6aa924e09",
+        "android_client_info": {
+          "package_name": "com.chatterly.app.chatterly"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "725969796524-c1144s7sgqpfr7iner9cp242m0jrudep.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBT__TllYUZRQi0rfOHaCA0R2ypvmjCfbc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "725969796524-c1144s7sgqpfr7iner9cp242m0jrudep.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "725969796524-hm9cqi3qr51f80mkiguiaaiuuh5gmu69.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.chatterly.app.chatterly"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
