@@ -55,6 +55,7 @@ class _SignInScreenState extends State<SignUpScreen> {
     String? verifyPassword = await showTextDialog(
         context: context,
         title: "Re-enter Password",
+        obscure: true,
         hintText: "Password",
         labelText: "Verify Password",
         cancelText: "Cancel",
@@ -99,6 +100,7 @@ class _SignInScreenState extends State<SignUpScreen> {
           'username': _userName,
           'email': _email,
           'profile_image': downloadURL,
+          'profile_image_path': 'profile_images/${value.user!.uid}.jpg'
         });
 
         setState(() {
@@ -200,7 +202,8 @@ class _SignInScreenState extends State<SignUpScreen> {
       required String hintText,
       required String labelText,
       required String cancelText,
-      required String okText}) async {
+      required String okText,
+      bool obscure = false}) async {
     final TextEditingController _textController = TextEditingController();
     return showDialog<String>(
       context: context,
@@ -214,6 +217,7 @@ class _SignInScreenState extends State<SignUpScreen> {
           ),
         ),
         content: TextFormField(
+            obscureText: obscure,
             controller: _textController,
             decoration: InputDecoration(
               hintText: hintText,
@@ -435,7 +439,9 @@ class _SignInScreenState extends State<SignUpScreen> {
                 const SizedBox(height: 16),
                 if (_isLoading)
                   const SizedBox(
-                      height: 50, child: CircularProgressIndicator()),
+                      height: 50,
+                      width: 50,
+                      child: CircularProgressIndicator()),
                 if (!_isLoading)
                   ElevatedButton(
                     onPressed: () {
