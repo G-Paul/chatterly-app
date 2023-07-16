@@ -6,7 +6,7 @@ class LightThemes {
     colorScheme: const ColorScheme.light(
       primary: Color(0xFFFD446E),
       secondary: Color(0xFFFAC949),
-      background: Color.fromARGB(255, 255, 253, 230),
+      background: Color(0xFFFFFDE6),
       onPrimary: Colors.white,
       onSecondary: Colors.white,
       onBackground: Colors.black,

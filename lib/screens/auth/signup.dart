@@ -1,7 +1,13 @@
+import 'dart:io';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-// import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 
 final _firebaseAuth = FirebaseAuth.instance;
 
@@ -14,20 +20,60 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignInScreenState extends State<SignUpScreen> {
   final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _pwController = TextEditingController();
   final _pwVerifyController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _firstTime = true;
+  bool _isLoading = false;
   String _email = '';
+  String _userName = '';
   String _password = '';
   String? _signUpState = null;
+  File? _profileImage = null;
+
+  void _pickImage({required ImageSource source}) async {
+    await ImagePicker()
+        .pickImage(
+            source: source,
+            imageQuality: 75,
+            maxWidth: 480,
+            preferredCameraDevice: CameraDevice.rear)
+        .then((value) {
+      if (value != null) {
+        setState(() {
+          _profileImage = File(value.path);
+        });
+      }
+    });
+  }
 
   void _submit() async {
     final isValid = _formKey.currentState!.validate();
     if (!isValid) return;
     _formKey.currentState!.save();
+    String? verifyPassword = await showTextDialog(
+        context: context,
+        title: "Re-enter Password",
+        hintText: "Password",
+        labelText: "Verify Password",
+        cancelText: "Cancel",
+        okText: "OK");
+    if (verifyPassword == null || verifyPassword != _password) {
+      setState(() {
+        _signUpState = "Passwords do not match";
+      });
+      return;
+    }
+    if (_profileImage == null) {
+      setState(() {
+        _signUpState = "Please select a profile image";
+      });
+      return;
+    }
     setState(() {
       _signUpState = 'Signing up...';
+      _isLoading = true;
     });
     try {
       await _firebaseAuth
@@ -38,6 +84,24 @@ class _SignInScreenState extends State<SignUpScreen> {
           .then((value) async {
         print(value);
         setState(() {
+          _signUpState = "Creating Profile...";
+        });
+        await FirebaseStorage.instance
+            .ref('profile_images/${value.user!.uid}.jpg')
+            .putFile(_profileImage!);
+        String downloadURL = await FirebaseStorage.instance
+            .ref('profile_images/${value.user!.uid}.jpg')
+            .getDownloadURL();
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(value.user!.uid)
+            .set({
+          'username': _userName,
+          'email': _email,
+          'profile_image': downloadURL,
+        });
+
+        setState(() {
           _signUpState = "Success!! Redirecting to Sign In...";
         });
         await Future.delayed(const Duration(seconds: 2));
@@ -47,6 +111,7 @@ class _SignInScreenState extends State<SignUpScreen> {
     } on FirebaseAuthException catch (e) {
       setState(() {
         _signUpState = "Error occurred!!!";
+        _isLoading = false;
         // _signUpState = e.message;
       });
       if (e.code == 'weak-password') {
@@ -71,6 +136,7 @@ class _SignInScreenState extends State<SignUpScreen> {
     } catch (e) {
       setState(() {
         _signUpState = "Error occurred!!!";
+        _isLoading = false;
       });
       print(e);
     } finally {}
@@ -84,6 +150,7 @@ class _SignInScreenState extends State<SignUpScreen> {
   @override
   void dispose() {
     _emailController.dispose();
+    _usernameController.dispose();
     _pwController.dispose();
     _pwVerifyController.dispose();
     super.dispose();
@@ -126,6 +193,46 @@ class _SignInScreenState extends State<SignUpScreen> {
     );
   }
 
+  //A dialog box that returns a text. Dialog box contains a text field and two buttons OK and Cancel
+  Future<String?> showTextDialog(
+      {required BuildContext context,
+      required String title,
+      required String hintText,
+      required String labelText,
+      required String cancelText,
+      required String okText}) async {
+    final TextEditingController _textController = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        surfaceTintColor: Colors.transparent,
+        title: Text(
+          title,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.primary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: TextFormField(
+            controller: _textController,
+            decoration: InputDecoration(
+              hintText: hintText,
+              labelText: labelText,
+            )),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(null),
+            child: Text(cancelText),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(_textController.text),
+            child: Text(okText),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -161,35 +268,73 @@ class _SignInScreenState extends State<SignUpScreen> {
           child: SingleChildScrollView(
             child: Column(
               children: [
-                Image.asset(
-                  'assets/images/chatterly.png',
-                  width: 100,
-                ),
-                const SizedBox(height: 10),
                 Text(
                   'Sign Up',
                   style: GoogleFonts.neonderthaw(
-                    fontSize: 58,
+                    fontSize: 40,
                     // fontWeight: FontWeight.bold,
                     color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
-                // const SizedBox(height: 20),
-                _signUpState == null
-                    ? const SizedBox(height: 30)
-                    : SizedBox(
+                SizedBox(height: 10),
+                Stack(
+                  children: [
+                    ClipOval(
+                      child: Material(
+                        color: Colors.transparent,
+                        child: Ink.image(
+                          fit: BoxFit.cover,
+                          image: (_profileImage == null)
+                              ? const AssetImage('assets/images/chatterly.png')
+                              : FileImage(_profileImage!) as ImageProvider,
+                          width: 100,
+                          height: 100,
+                          // child: InkWell(
+                          //   splashColor: Theme.of(context)
+                          //       .colorScheme
+                          //       .primary
+                          //       .withOpacity(0.2),
+                          //   onTap: () {},
+                          // ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
                         height: 30,
-                        child: Center(
-                          child: Text(
-                            _signUpState!,
-                            style: TextStyle(
-                              fontSize: 14,
-                              // fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
+                        width: 30,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          borderRadius: BorderRadius.circular(15),
+                          border: Border.all(
+                              color: Theme.of(context).colorScheme.background,
+                              width: 3,
+                              strokeAlign: BorderSide.strokeAlignOutside),
+                        ),
+                        child: IconButton(
+                          onPressed: () async {
+                            await showImageSource(context).then((value) {
+                              if (value != null) {
+                                _pickImage(source: value);
+                              }
+                            });
+                          },
+                          icon: Icon(
+                            Icons.edit,
+                            size: 15,
+                            color: Theme.of(context).colorScheme.onPrimary,
                           ),
                         ),
                       ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+
+                // const SizedBox(height: 20),
+
                 //Text form fields to input email id and password
                 Padding(
                   padding:
@@ -213,6 +358,33 @@ class _SignInScreenState extends State<SignUpScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   child: TextFormField(
+                    // obscureText: true,
+                    controller: _usernameController,
+                    validator: (value) {
+                      if (_firstTime) return null;
+                      if (value == null || value.isEmpty) {
+                        return 'Username is required';
+                      }
+                      if (value.length < 6) {
+                        return 'Username must be at least 3 characters';
+                      }
+                      return null;
+                    },
+                    onEditingComplete: () => FocusScope.of(context).nextFocus(),
+                    // onChanged: (_) => _formKey.currentState!.validate(),
+                    onSaved: (newValue) {
+                      _userName = newValue!;
+                    },
+                    // keyboardType: TextInputType.emailAddress,
+                    // autocorrect: true,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: _textFieldDecoration(labelText: 'Username'),
+                  ),
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  child: TextFormField(
                     obscureText: true,
                     controller: _pwController,
                     validator: (value) => validatePassword(value, _firstTime),
@@ -225,45 +397,67 @@ class _SignInScreenState extends State<SignUpScreen> {
                     decoration: _textFieldDecoration(labelText: 'New Password'),
                   ),
                 ),
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  child: TextFormField(
-                    obscureText: true,
-                    controller: _pwVerifyController,
-                    validator: (value) => validateVerifyPassword(
-                        value, _pwController.text, _firstTime),
-                    onEditingComplete: () => FocusScope.of(context).unfocus(),
-                    // onSaved: (newValue) {
-                    //   _password = newValue!;
-                    // },
-                    keyboardType: TextInputType.visiblePassword,
-                    autocorrect: false,
-                    decoration:
-                        _textFieldDecoration(labelText: 'Verify Password'),
-                  ),
-                ),
-                // Form fields for email and password, with outlinedborder
+                // Padding(
+                //   padding:
+                //       const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                //   child: TextFormField(
+                //     obscureText: true,
+                //     controller: _pwVerifyController,
+                //     validator: (value) => validateVerifyPassword(
+                //         value, _pwController.text, _firstTime),
+                //     onEditingComplete: () => FocusScope.of(context).unfocus(),
+                //     // onSaved: (newValue) {
+                //     //   _password = newValue!;
+                //     // },
+                //     keyboardType: TextInputType.visiblePassword,
+                //     autocorrect: false,
+                //     decoration:
+                //         _textFieldDecoration(labelText: 'Verify Password'),
+                //   ),
+                // ),
+                // // Form fields for email and password, with outlinedborder
                 const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _firstTime = false;
-                    });
-                    _submit();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    minimumSize: const Size(200, 50),
+                _signUpState == null
+                    ? const SizedBox(height: 30)
+                    : SizedBox(
+                        height: 30,
+                        child: Center(
+                          child: Text(
+                            _signUpState!,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                        ),
+                      ),
+                const SizedBox(height: 16),
+                if (_isLoading)
+                  const SizedBox(
+                      height: 50, child: CircularProgressIndicator()),
+                if (!_isLoading)
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _firstTime = false;
+                      });
+                      _submit();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                      minimumSize: const Size(200, 50),
+                    ),
+                    child: const Text('Sign Up'),
                   ),
-                  child: const Text('Sign Up'),
-                ),
                 const SizedBox(height: 16),
                 TextButton(
-                  onPressed: () {
-                    Navigator.pushReplacementNamed(context, '/signin');
-                  },
+                  onPressed: !_isLoading
+                      ? () {
+                          Navigator.pushReplacementNamed(context, '/signin');
+                        }
+                      : null,
                   style: TextButton.styleFrom(
                     foregroundColor: Theme.of(context).colorScheme.primary,
                   ),
@@ -312,4 +506,51 @@ String? validateVerifyPassword(
     return 'Passwords do not match';
   }
   return null;
+}
+
+Future<ImageSource?> showImageSource(BuildContext context) async {
+  if (Platform.isIOS) {
+    return showCupertinoModalPopup(
+      context: context,
+      builder: (context) => CupertinoActionSheet(
+        actions: [
+          CupertinoActionSheetAction(
+              onPressed: () => Navigator.of(context).pop(ImageSource.camera),
+              child: Text("Camera")),
+          CupertinoActionSheetAction(
+              onPressed: () => Navigator.of(context).pop(ImageSource.gallery),
+              child: Text("Gallery")),
+        ],
+      ),
+    );
+  }
+  return showModalBottomSheet(
+      context: context,
+      builder: (context) => Material(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  minVerticalPadding: 10,
+                  leading: FaIcon(
+                    FontAwesomeIcons.camera,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 20,
+                  ),
+                  title: Text("Camera"),
+                  onTap: () => Navigator.of(context).pop(ImageSource.camera),
+                ),
+                ListTile(
+                  minVerticalPadding: 10,
+                  leading: FaIcon(
+                    FontAwesomeIcons.images,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 20,
+                  ),
+                  title: Text("Gallery"),
+                  onTap: () => Navigator.of(context).pop(ImageSource.gallery),
+                ),
+              ],
+            ),
+          ));
 }

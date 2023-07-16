@@ -1,3 +1,4 @@
 {
-  "cmake.configureOnOpen": true
+  "cmake.configureOnOpen": true,
+  "cmake.sourceDirectory": "C:/Users/onlin/OneDrive/Desktop/Development/flutterApps/chatterly/linux"
 }
