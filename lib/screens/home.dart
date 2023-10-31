@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+//Local widgets and files:
+import './profile/show_qr.dart';
+
 final _firebaseAuth = FirebaseAuth.instance;
 
 class HomeScreen extends StatefulWidget {
@@ -40,6 +43,22 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Theme.of(context).colorScheme.background,
         title: Text(_firebaseAuth.currentUser!.email.toString()),
         actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ShowQRCode(
+                    dataString: _firebaseAuth.currentUser!.uid,
+                  ),
+                ),
+              );
+            },
+            icon: const FaIcon(
+              FontAwesomeIcons.qrcode,
+              size: 20,
+            ),
+          ),
           IconButton(
             onPressed: () {
               _firebaseAuth.signOut();

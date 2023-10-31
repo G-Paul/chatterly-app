@@ -52,6 +52,7 @@ class _SignInScreenState extends State<SignUpScreen> {
     final isValid = _formKey.currentState!.validate();
     if (!isValid) return;
     _formKey.currentState!.save();
+    FocusScope.of(context).unfocus();
     String? verifyPassword = await showTextDialog(
         context: context,
         title: "Re-enter Password",
